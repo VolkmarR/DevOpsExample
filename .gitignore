@@ -398,3 +398,4 @@ FodyWeavers.xsd
 *.sln.iml
 database/postgres-data
 docker-postgres-password.txt
+.nuke/build.schema.json
