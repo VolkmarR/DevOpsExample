@@ -1,0 +1,19 @@
+# ---- Second Stage: runtime ----
+FROM mcr.microsoft.com/dotnet/aspnet:7.0.5-alpine3.17
+
+# specify working directory
+WORKDIR /app
+
+# copy the published app
+COPY . .
+
+# expose the port
+EXPOSE 10000
+ENV ASPNETCORE_URLS=http://+:10000/
+
+# Set config using env variables
+ENV Observability__JaegerUrl=
+ENV ConnectionStrings__Postgres=User ID=devops-example;Host=localhost;Port=5432;Database=devops-example-db;Pooling=true;Integrated Security=true;Password=
+
+# run the application
+ENTRYPOINT ["dotnet", "QuestionsApp.Web.dll"]
