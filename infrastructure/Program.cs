@@ -10,19 +10,15 @@ return await Deployment.RunAsync(() =>
 {
     var outputs = new Dictionary<string, object?>();
 
-    if ("registry".Equals(Deployment.Instance.StackName, StringComparison.OrdinalIgnoreCase))
+    if ("common".Equals(Deployment.Instance.StackName, StringComparison.OrdinalIgnoreCase))
     {
-
         var containerRegistry = new DigitalOcean.ContainerRegistry("registry", new DigitalOcean.ContainerRegistryArgs
         {
             SubscriptionTierSlug = "starter",
             Name = "devops-example",
             Region = "fra1",
         });
-        outputs["registry-url"] = containerRegistry.Endpoint;
-    }
-    else
-    {
+
         var reg = new StackReference($"{Deployment.Instance.OrganizationName}/{Deployment.Instance.ProjectName}/registry");
 
         var dbCluster = new DigitalOcean.DatabaseCluster("devops-example-db-cluster", new()
@@ -35,9 +31,19 @@ return await Deployment.RunAsync(() =>
             Version = "15",
         });
 
+        outputs["registry-url"] = containerRegistry.Endpoint;
+        outputs["db-cluster-id"] = dbCluster.Id;
+    }
+    else
+    {
+        var reg = new StackReference($"{Deployment.Instance.OrganizationName}/{Deployment.Instance.ProjectName}/common");
+        var clusterId = reg.RequireOutput("db-cluster-id").Apply(v => (string)v);
+
+        var dbCluster = DigitalOcean.GetDatabaseCluster.Invoke(new() { Name = "devops-example-db-cluster" });
+
         var db = new DigitalOcean.DatabaseDb("devops-example-db", new()
         {
-            ClusterId = dbCluster.Id,
+            ClusterId = dbCluster.Apply(v => v.Id),
         });
 
         var app = new DigitalOcean.App("devops-example-app", new()
@@ -66,12 +72,12 @@ return await Deployment.RunAsync(() =>
                             new DigitalOcean.Inputs.AppSpecServiceEnvArgs
                             {
                                 Key = "DB__Host",
-                                Value = dbCluster.Host,
+                                Value = dbCluster.Apply(v => v.Host),
                             },
                             new DigitalOcean.Inputs.AppSpecServiceEnvArgs
                             {
                                 Key = "DB__Port",
-                                Value = dbCluster.Port.Apply(v => v.ToString()),
+                                Value = dbCluster.Apply(v => v.Port.ToString()),
                             },
                             new DigitalOcean.Inputs.AppSpecServiceEnvArgs
                             {
@@ -81,12 +87,12 @@ return await Deployment.RunAsync(() =>
                             new DigitalOcean.Inputs.AppSpecServiceEnvArgs
                             {
                                 Key = "DB__UserName",
-                                Value = dbCluster.User,
+                                Value = dbCluster.Apply(v => v.User),
                             },
                             new DigitalOcean.Inputs.AppSpecServiceEnvArgs
                             {
                                 Key = "DB__Password",
-                                Value = dbCluster.Password,
+                                Value = dbCluster.Apply(v => v.Password),
                             },
                         },
                         HttpPort = 8080,
