@@ -19,24 +19,26 @@ using System.Security.Policy;
 using System.Collections.Generic;
 using System.Threading;
 using Nuke.Common.Git;
+using Nuke.Common.CI.GitHubActions;
 
+[GitHubActions("PR-DeployToLatest",
+    GitHubActionsImage.UbuntuLatest,
+    On = new[] { GitHubActionsTrigger.PullRequest },
+    InvokedTargets = new[] { nameof(DeployToLatest) },
+    ImportSecrets = new[] { nameof(RegistryUrl), nameof(DigitalOcean_Token) })]
 class Build : NukeBuild
 {
-    /// Support plugins are available for:
-    ///   - JetBrains ReSharper        https://nuke.build/resharper
-    ///   - JetBrains Rider            https://nuke.build/rider
-    ///   - Microsoft VisualStudio     https://nuke.build/visualstudio
-    ///   - Microsoft VSCode           https://nuke.build/vscode
+
 
     public static int Main() => Execute<Build>(x => x.Compile);
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
 
-    [Parameter("Url of the docker registry (without the https:// prefix)")]
+    [Parameter("Url of the docker registry (without the https:// prefix)"), Secret]
     readonly string RegistryUrl = null;
 
-    [Parameter("Api Token for Docker push")]
+    [Parameter("Api Token for Docker push"), Secret]
     readonly string DigitalOcean_Token = null;
 
     [Parameter("Docker Tag for deployment")]
