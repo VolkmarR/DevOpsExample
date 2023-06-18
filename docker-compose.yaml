@@ -1,0 +1,22 @@
+version: '3.8'
+
+secrets:
+  db_password:
+    file: ./docker-postgres-password.txt
+
+services:
+  # Database server
+  postgres:
+    image: postgres:15.3-alpine3.18
+    restart: always
+    container_name: postgres-container
+    volumes:
+      - ./database/postgres-data:/var/lib/postgresql/data    
+    ports:
+      - 5432:5432
+    secrets:
+      - db_password
+    environment:
+      - POSTGRES_USER=devops-example
+      - POSTGRES_DB=devops-example-db
+      - POSTGRES_PASSWORD_FILE=/run/secrets/db_password

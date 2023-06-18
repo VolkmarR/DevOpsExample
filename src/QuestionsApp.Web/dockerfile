@@ -1,0 +1,26 @@
+FROM mcr.microsoft.com/dotnet/aspnet:7.0.7-alpine3.18
+
+# Set config using env variables
+ENV Observability__JaegerUrl=
+ENV DB__Host=
+ENV DB__Port=
+ENV DB__Database=devops-example-db
+ENV DB__UserName=devops-example
+ENV DB__Password=
+
+# specify working directory
+WORKDIR /app
+
+# copy the published app
+COPY . .
+
+# expose the port
+EXPOSE 8080
+ENV ASPNETCORE_URLS=http://+:8080/
+
+# get version from build arg
+ARG build_tag=not-set
+ENV Version=$build_tag
+
+# run the application
+ENTRYPOINT ["dotnet", "QuestionsApp.Web.dll"]

@@ -1,0 +1,2 @@
+config:
+  DevOpsExample:dockerTag: 23.06.18.5c9030f-02
