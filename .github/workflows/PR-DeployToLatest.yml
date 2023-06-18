@@ -34,6 +34,6 @@ jobs:
       - name: 'Run: DeployToLatest'
         run: ./build.cmd DeployToLatest
         env:
-          RegistryUrl: ${{ secrets.REGISTRY_URL }}
-          DigitalOcean_Token: ${{ secrets.DIGITAL_OCEAN_TOKEN }}
-          Pulumi_Access_Token: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+          REGISTRYURL: ${{ secrets.REGISTRYURL }}
+          DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}

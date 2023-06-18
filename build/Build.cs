@@ -25,12 +25,12 @@ using Nuke.Common.CI.GitHubActions;
     GitHubActionsImage.UbuntuLatest,
     On = new[] { GitHubActionsTrigger.PullRequest },
     InvokedTargets = new[] { nameof(DeployToLatest) },
-    ImportSecrets = new[] { nameof(RegistryUrl), nameof(DigitalOcean_Token), nameof(PULUMI_ACCESS_TOKEN) })]
+    ImportSecrets = new[] { nameof(REGISTRYURL), nameof(DIGITALOCEAN_TOKEN), nameof(PULUMI_ACCESS_TOKEN) })]
 [GitHubActions("MAN-DeployLatestToStage",
     GitHubActionsImage.UbuntuLatest,
     On = new[] { GitHubActionsTrigger.WorkflowDispatch },
     InvokedTargets = new[] { nameof(DeployLatestToStage) },
-    ImportSecrets = new[] { nameof(RegistryUrl), nameof(DigitalOcean_Token), nameof(PULUMI_ACCESS_TOKEN) })]
+    ImportSecrets = new[] { nameof(REGISTRYURL), nameof(DIGITALOCEAN_TOKEN), nameof(PULUMI_ACCESS_TOKEN) })]
 class Build : NukeBuild
 {
     public static int Main() => Execute<Build>(x => x.Compile);
@@ -39,10 +39,10 @@ class Build : NukeBuild
     readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
 
     [Parameter("Url of the docker registry (without the https:// prefix)"), Secret]
-    readonly string RegistryUrl = null;
+    readonly string REGISTRYURL = null;
 
     [Parameter("Api Token for Digital Ocean deployments"), Secret]
-    readonly string DigitalOcean_Token = null;
+    readonly string DIGITALOCEAN_TOKEN = null;
 
     [Parameter("Api Token for Pulumi"), Secret]
     readonly string PULUMI_ACCESS_TOKEN = null;
@@ -63,7 +63,7 @@ class Build : NukeBuild
     protected override void OnBuildInitialized()
     {
         base.OnBuildInitialized();
-        Environment.SetEnvironmentVariable("DIGITALOCEAN_TOKEN", DigitalOcean_Token);
+        Environment.SetEnvironmentVariable("DIGITALOCEAN_TOKEN", DIGITALOCEAN_TOKEN);
         Environment.SetEnvironmentVariable("PULUMI_ACCESS_TOKEN", PULUMI_ACCESS_TOKEN);
     }
 
@@ -142,28 +142,28 @@ class Build : NukeBuild
 
     Target PublishDocker => _ => _
         .DependsOn(Publish)
-        .Requires(() => DigitalOcean_Token, () => RegistryUrl)
+        .Requires(() => DIGITALOCEAN_TOKEN, () => REGISTRYURL)
         .Executes(() =>
         {
             Repository.Commit.NotNullOrEmpty();
 
             DockerLogger = (type, text) => Log.Debug(text);
 
-            if (!string.IsNullOrEmpty(RegistryUrl))
+            if (!string.IsNullOrEmpty(REGISTRYURL))
             {
 
                 DockerLogin(a => a
-                    .SetServer(RegistryUrl)
-                    .SetUsername(DigitalOcean_Token)
-                    .SetPassword(DigitalOcean_Token));
+                    .SetServer(REGISTRYURL)
+                    .SetUsername(DIGITALOCEAN_TOKEN)
+                    .SetPassword(DIGITALOCEAN_TOKEN));
             }
 
             DockerTag = $"{DateTime.Today:yy.MM.dd}.{Repository.Commit[..7]}-{DateTime.Now:ff}{Random.Shared.Next(0, 9)}";
 
             var tag = $"rigo-questions-app:{DockerTag}";
             var tags = new List<string>() { tag };
-            var remoteTag = $"{RegistryUrl}/{tag}";
-            if (!string.IsNullOrEmpty(RegistryUrl))
+            var remoteTag = $"{REGISTRYURL}/{tag}";
+            if (!string.IsNullOrEmpty(REGISTRYURL))
                 tags.Add(remoteTag);
 
             DockerBuild(a => a
@@ -172,7 +172,7 @@ class Build : NukeBuild
                 .SetTag(tags));
 
             // push, if remoteurl is available
-            if (!string.IsNullOrEmpty(RegistryUrl))
+            if (!string.IsNullOrEmpty(REGISTRYURL))
                 DockerPush(a => a.SetName(remoteTag));
 
             Log.Information("Docker image tag {tag}", tag);
@@ -213,21 +213,19 @@ class Build : NukeBuild
         .Requires(() => PULUMI_ACCESS_TOKEN)
         .Executes(() =>
         {
-            PulumiStackSelect(a => a.SetStackName("common").SetCwd(InfrastructureDirectory));
-
             PulumiUp(a => a
+                .SetStack("common")
                 .SetYes(true)
+                .SetSkipPreview(true)
                 .SetCwd(InfrastructureDirectory));
         });
 
     void DestroyStack(string stack)
     {
-        PulumiStackSelect(a => a
-            .SetStackName("latest")
-            .SetCwd(InfrastructureDirectory));
-
         PulumiDestroy(a => a
+            .SetStack(stack)
             .SetYes(true)
+            .SetSkipPreview(true)
             .SetCwd(InfrastructureDirectory));
     }
 
@@ -236,14 +234,11 @@ class Build : NukeBuild
     {
         dockerTag.NotNullOrEmpty();
 
-        PulumiStackSelect(a => a
-            .SetStackName(stack)
-            .SetCwd(InfrastructureDirectory)
-            .SetNonInteractive(true));
-
         PulumiUp(a => a
             .SetYes(true)
+            .SetStack(stack)
             .SetCwd(InfrastructureDirectory)
+            .SetSkipPreview(true)
             .AddConfig($"dockerTag={dockerTag}"));
     }
 }
