@@ -23,8 +23,10 @@ var connectionStringBuilder = new NpgsqlConnectionStringBuilder()
     Username = builder.Configuration.GetValue<string>("DB:UserName"),
     Password = builder.Configuration.GetValue<string>("DB:Password"),
     Pooling = true,
-    IntegratedSecurity = true,
+    SslMode = SslMode.Allow,
 };
+
+Console.WriteLine(connectionStringBuilder.ToString());
 
 builder.Services.AddDbContext<QuestionsContext>(x => x.UseNpgsql(connectionStringBuilder.ToString()));
 // Configuration for SignalR

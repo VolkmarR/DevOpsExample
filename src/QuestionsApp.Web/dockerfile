@@ -8,15 +8,16 @@ WORKDIR /app
 COPY . .
 
 # expose the port
-EXPOSE 10000
-ENV ASPNETCORE_URLS=http://+:10000/
+EXPOSE 8080
+ENV ASPNETCORE_URLS=http://+:8080/
 
 # Set config using env variables
 ENV Observability__JaegerUrl=
 ENV DB__Host=
+ENV DB__Port=
 ENV DB__Database=devops-example-db
 ENV DB__UserName=devops-example
-ENV DB__Password=devops-example
+ENV DB__Password=
 
 # run the application
 ENTRYPOINT ["dotnet", "QuestionsApp.Web.dll"]
