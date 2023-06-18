@@ -2,28 +2,27 @@ using System;
 using System.IO;
 using System.Linq;
 using Nuke.Common;
-using Nuke.Common.CI;
-using Nuke.Common.Execution;
 using Nuke.Common.IO;
 using Nuke.Common.ProjectModel;
-using Nuke.Common.Tooling;
 using Nuke.Common.Tools.DotNet;
 using Nuke.Common.Tools.Docker;
 using Nuke.Common.Tools.Pulumi;
-using Nuke.Common.Utilities.Collections;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
 using static Nuke.Common.Tools.Docker.DockerTasks;
 using static Nuke.Common.Tools.Pulumi.PulumiTasks;
 using Serilog;
-using System.Security.Policy;
 using System.Collections.Generic;
-using System.Threading;
 using Nuke.Common.Git;
 using Nuke.Common.CI.GitHubActions;
 
-[GitHubActions("PR-DeployToLatest",
+[GitHubActions("PR-Test",
     GitHubActionsImage.UbuntuLatest,
     On = new[] { GitHubActionsTrigger.PullRequest },
+    InvokedTargets = new[] { nameof(Test) },
+    ImportSecrets = new[] { nameof(REGISTRYURL), nameof(DIGITALOCEAN_TOKEN), nameof(PULUMI_ACCESS_TOKEN) })]
+[GitHubActions("PR-DeployToLatest",
+    GitHubActionsImage.UbuntuLatest,
+    OnPushBranches = new[] { "master" },
     InvokedTargets = new[] { nameof(DeployToLatest) },
     ImportSecrets = new[] { nameof(REGISTRYURL), nameof(DIGITALOCEAN_TOKEN), nameof(PULUMI_ACCESS_TOKEN) })]
 [GitHubActions("MAN-DeployLatestToStage",
