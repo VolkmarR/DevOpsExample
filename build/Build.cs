@@ -213,21 +213,19 @@ class Build : NukeBuild
         .Requires(() => PULUMI_ACCESS_TOKEN)
         .Executes(() =>
         {
-            PulumiStackSelect(a => a.SetStackName("common").SetCwd(InfrastructureDirectory));
-
             PulumiUp(a => a
+                .SetStack("common")
                 .SetYes(true)
+                .SetSkipPreview(true)
                 .SetCwd(InfrastructureDirectory));
         });
 
     void DestroyStack(string stack)
     {
-        PulumiStackSelect(a => a
-            .SetStackName("latest")
-            .SetCwd(InfrastructureDirectory));
-
         PulumiDestroy(a => a
+            .SetStack(stack)
             .SetYes(true)
+            .SetSkipPreview(true)
             .SetCwd(InfrastructureDirectory));
     }
 
@@ -236,14 +234,11 @@ class Build : NukeBuild
     {
         dockerTag.NotNullOrEmpty();
 
-        PulumiStackSelect(a => a
-            .SetStackName(stack)
-            .SetCwd(InfrastructureDirectory)
-            .SetNonInteractive(true));
-
         PulumiUp(a => a
             .SetYes(true)
+            .SetStack(stack)
             .SetCwd(InfrastructureDirectory)
+            .SetSkipPreview(true)
             .AddConfig($"dockerTag={dockerTag}"));
     }
 }
