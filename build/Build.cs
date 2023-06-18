@@ -191,8 +191,8 @@ class Build : NukeBuild
                 .SetStackName("latest")
                 .SetCwd(InfrastructureDirectory));
 
-            var dockerTag = PulumiConfigGet(a => a
-                .SetKey("dockerTag")
+            var dockerTag = PulumiStackOutput(a => a
+                .SetPropertyName("dockerTag")
                 .SetCwd(InfrastructureDirectory)).Select(q => q.Text).FirstOrDefault();
 
             dockerTag.NotNullOrEmpty();
