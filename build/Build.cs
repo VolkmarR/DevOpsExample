@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Linq;
 using Nuke.Common;
 using Nuke.Common.CI;
@@ -15,6 +16,9 @@ using static Nuke.Common.IO.PathConstruction;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
 using static Nuke.Common.Tools.Docker.DockerTasks;
 using Serilog;
+using System.Security.Policy;
+using System.Collections.Generic;
+using System.Threading;
 
 class Build : NukeBuild
 {
@@ -29,12 +33,36 @@ class Build : NukeBuild
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
 
+    [Parameter("Url of the docker registry (without the https:// prefix)")]
+    readonly string RegistryUrl = null;
+
+    [Parameter("Api Token for Docker push")]
+    readonly string DigitalOceanApiToken = null;
+
     AbsolutePath PublishDirectory => Solution.Directory / "publish";
-    AbsolutePath PublishReverseProxyDirectory => PublishDirectory / "reverseproxy";
-    AbsolutePath PublishQuestionsAppDirectory => PublishDirectory / "questionsapp";
 
     [Solution(GenerateProjects = true)]
     readonly Solution Solution;
+
+    Target InitLocalDB => _ => _
+        .Executes(() =>
+        {
+            var dockerPostgresPasswordPath = Solution.Directory / "docker-postgres-password.txt";
+            // If Docker Compose was startet before InitLocalDB, then docker-postgres-password.txt is wrongly created as directory
+            if (dockerPostgresPasswordPath.DirectoryExists())
+                dockerPostgresPasswordPath.DeleteDirectory();
+
+            Assert.False(dockerPostgresPasswordPath.FileExists(), "Password was already initialized");
+
+            var rnd = new Random();
+            var password = "";
+            while (password.Length < 20)
+                password += "*" + rnd.Next(int.MaxValue);
+
+            File.WriteAllText(dockerPostgresPasswordPath, password);
+
+            DotNet($"user-secrets set DB:Password \"{password}\" --project {Solution.Web.QuestionsApp_Web}");
+        });
 
     Target Clean => _ => _
         .Before(Restore)
@@ -67,25 +95,16 @@ class Build : NukeBuild
         .DependsOn(Clean, Restore)
         .Executes(() =>
         {
-            static void PublishProject(Project project, AbsolutePath path)
-            {
-                path.CreateOrCleanDirectory();
+            PublishDirectory.CreateOrCleanDirectory();
 
-                DotNetPublish(a => a
-                    .SetNoRestore(true)
-                    .SetProject(project)
-                    .SetVerbosity(DotNetVerbosity.Quiet)
-                    .SetOutput(path)
-                    .SetConfiguration(Configuration.Release));
+            DotNetPublish(a => a
+                .SetNoRestore(true)
+                .SetProject(Solution.Web.QuestionsApp_Web)
+                .SetVerbosity(DotNetVerbosity.Quiet)
+                .SetOutput(PublishDirectory)
+                .SetConfiguration(Configuration.Release));
 
-                (path / "appsettings.Development.json").DeleteFile();
-            }
-
-            // Build ReverseProxy
-            PublishProject(Solution.Gateway.ReverseProxy, PublishReverseProxyDirectory);
-
-            // Build QuestionsApp
-            PublishProject(Solution.Web.QuestionsApp_Web, PublishQuestionsAppDirectory);
+            (PublishDirectory / "appsettings.Development.json").DeleteFile();
         });
 
     Target PublishDocker => _ => _
@@ -94,17 +113,27 @@ class Build : NukeBuild
         {
             DockerLogger = (type, text) => Log.Debug(text);
 
-            static void PublishProject(AbsolutePath path, string tag)
+            if (!string.IsNullOrEmpty(RegistryUrl))
             {
-                DockerBuild(a => a.SetPath(path).SetTag(tag));
+                DigitalOceanApiToken.NotNullOrEmpty();
+
+                DockerLogin(a => a
+                    .SetServer(RegistryUrl)
+                    .SetUsername(DigitalOceanApiToken)
+                    .SetPassword(DigitalOceanApiToken));
             }
 
-            // Build ReverseProxy
-            PublishProject(PublishReverseProxyDirectory, "rigo-reverse-proxy");
+            var tag = "rigo-questions-app";
+            var tags = new List<string>() { tag };
+            var remoteTag = $"{RegistryUrl}/{tag}";
+            if (!string.IsNullOrEmpty(RegistryUrl))
+                tags.Add(remoteTag);
 
-            // Build QuestionsApp
-            PublishProject(PublishQuestionsAppDirectory, "rigo-questions-app");
+            DockerBuild(a => a.SetPath(PublishDirectory).SetTag(tags));
+
+            // push, if remoteurl is available
+            if (!string.IsNullOrEmpty(RegistryUrl))
+                DockerPush(a => a.SetName(remoteTag));
         });
-
 
 }

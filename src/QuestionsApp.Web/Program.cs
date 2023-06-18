@@ -5,6 +5,7 @@ using QuestionsApp.Web.Api.Queries;
 using QuestionsApp.Web.DB;
 using QuestionsApp.Web.Hubs;
 using Observability;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,8 +15,18 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<Program>());
 // Configuration for Entity Framework
-var connectionString = builder.Configuration.GetConnectionString("Postgres");
-builder.Services.AddDbContext<QuestionsContext>(x => x.UseNpgsql(connectionString));
+var connectionStringBuilder = new NpgsqlConnectionStringBuilder()
+{
+    Host = builder.Configuration.GetValue<string>("DB:Host"),
+    Port = builder.Configuration.GetValue<int>("DB:Port", 5432),
+    Database = builder.Configuration.GetValue<string>("DB:Database"),
+    Username = builder.Configuration.GetValue<string>("DB:UserName"),
+    Password = builder.Configuration.GetValue<string>("DB:Password"),
+    Pooling = true,
+    IntegratedSecurity = true,
+};
+
+builder.Services.AddDbContext<QuestionsContext>(x => x.UseNpgsql(connectionStringBuilder.ToString()));
 // Configuration for SignalR
 builder.Services.AddSignalR();
 

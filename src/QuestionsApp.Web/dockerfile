@@ -13,7 +13,10 @@ ENV ASPNETCORE_URLS=http://+:10000/
 
 # Set config using env variables
 ENV Observability__JaegerUrl=
-ENV ConnectionStrings__Postgres=User ID=devops-example;Host=localhost;Port=5432;Database=devops-example-db;Pooling=true;Integrated Security=true;Password=
+ENV DB__Host=
+ENV DB__Database=devops-example-db
+ENV DB__UserName=devops-example
+ENV DB__Password=devops-example
 
 # run the application
 ENTRYPOINT ["dotnet", "QuestionsApp.Web.dll"]
