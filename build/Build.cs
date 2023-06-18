@@ -25,7 +25,12 @@ using Nuke.Common.CI.GitHubActions;
     GitHubActionsImage.UbuntuLatest,
     On = new[] { GitHubActionsTrigger.PullRequest },
     InvokedTargets = new[] { nameof(DeployToLatest) },
-    ImportSecrets = new[] { nameof(RegistryUrl), nameof(DigitalOcean_Token), nameof(Pulumi_Token) })]
+    ImportSecrets = new[] { nameof(RegistryUrl), nameof(DigitalOcean_Token), nameof(Pulumi_Access_Token) })]
+[GitHubActions("MAN-DeployLatestToStage",
+    GitHubActionsImage.UbuntuLatest,
+    On = new[] { GitHubActionsTrigger.WorkflowDispatch },
+    InvokedTargets = new[] { nameof(DeployLatestToStage) },
+    ImportSecrets = new[] { nameof(RegistryUrl), nameof(DigitalOcean_Token), nameof(Pulumi_Access_Token) })]
 class Build : NukeBuild
 {
 

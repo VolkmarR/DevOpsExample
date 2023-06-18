@@ -9,14 +9,14 @@
 #
 #     - To trigger manual generation invoke:
 #
-#         nuke --generate-configuration GitHubActions_PR-DeployToLatest --host GitHubActions
+#         nuke --generate-configuration GitHubActions_MAN-DeployLatestToStage --host GitHubActions
 #
 # </auto-generated>
 # ------------------------------------------------------------------------------
 
-name: PR-DeployToLatest
+name: MAN-DeployLatestToStage
 
-on: [pull_request]
+on: [workflow_dispatch]
 
 jobs:
   ubuntu-latest:
@@ -31,8 +31,8 @@ jobs:
             .nuke/temp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj', '**/Directory.Packages.props') }}
-      - name: 'Run: DeployToLatest'
-        run: ./build.cmd DeployToLatest
+      - name: 'Run: DeployLatestToStage'
+        run: ./build.cmd DeployLatestToStage
         env:
           RegistryUrl: ${{ secrets.REGISTRY_URL }}
           DigitalOcean_Token: ${{ secrets.DIGITAL_OCEAN_TOKEN }}
