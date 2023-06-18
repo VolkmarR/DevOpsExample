@@ -33,8 +33,6 @@ using Nuke.Common.CI.GitHubActions;
     ImportSecrets = new[] { nameof(RegistryUrl), nameof(DigitalOcean_Token), nameof(PULUMI_ACCESS_TOKEN) })]
 class Build : NukeBuild
 {
-
-
     public static int Main() => Execute<Build>(x => x.Compile);
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
@@ -61,6 +59,12 @@ class Build : NukeBuild
 
     [GitRepository]
     readonly GitRepository Repository;
+
+    protected override void OnBuildInitialized()
+    {
+        base.OnBuildInitialized();
+        Environment.SetEnvironmentVariable("PULUMI_ACCESS_TOKEN", PULUMI_ACCESS_TOKEN);
+    }
 
     Target InitLocalDB => _ => _
         .Executes(() =>
@@ -109,8 +113,18 @@ class Build : NukeBuild
                 .SetVerbosity(DotNetVerbosity.Quiet));
         });
 
+    Target Test => _ => _
+        .DependsOn(Compile)
+        .Executes(() =>
+        {
+            DotNetTest(s => s
+                .SetProjectFile(Solution.Web.QuestionsApp_Tests)
+                .SetNoRestore(true)
+                .SetVerbosity(DotNetVerbosity.Quiet));
+        });
+
     Target Publish => _ => _
-        .DependsOn(Clean, Restore)
+        .DependsOn(Clean, Restore, Test)
         .Executes(() =>
         {
             PublishDirectory.CreateOrCleanDirectory();
@@ -220,11 +234,6 @@ class Build : NukeBuild
     void DeployToAction(string stack, string dockerTag)
     {
         dockerTag.NotNullOrEmpty();
-
-        Log.Information("PARAM: " + PULUMI_ACCESS_TOKEN);
-
-        Log.Information("ENV: " + Environment.GetEnvironmentVariable("PULUMI_ACCESS_TOKEN"));
-
 
         PulumiStackSelect(a => a
             .SetStackName(stack)
