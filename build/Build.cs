@@ -9,16 +9,16 @@ using Nuke.Common.ProjectModel;
 using Nuke.Common.Tooling;
 using Nuke.Common.Tools.DotNet;
 using Nuke.Common.Tools.Docker;
+using Nuke.Common.Tools.Pulumi;
 using Nuke.Common.Utilities.Collections;
-using static Nuke.Common.EnvironmentInfo;
-using static Nuke.Common.IO.FileSystemTasks;
-using static Nuke.Common.IO.PathConstruction;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
 using static Nuke.Common.Tools.Docker.DockerTasks;
+using static Nuke.Common.Tools.Pulumi.PulumiTasks;
 using Serilog;
 using System.Security.Policy;
 using System.Collections.Generic;
 using System.Threading;
+using Nuke.Common.Git;
 
 class Build : NukeBuild
 {
@@ -37,12 +37,20 @@ class Build : NukeBuild
     readonly string RegistryUrl = null;
 
     [Parameter("Api Token for Docker push")]
-    readonly string DigitalOceanApiToken = null;
+    readonly string DigitalOcean_Token = null;
+
+    [Parameter("Docker Tag for deployment")]
+    string DockerTag = null;
 
     AbsolutePath PublishDirectory => Solution.Directory / "publish";
 
+    AbsolutePath InfrastructureDirectory => Solution.Directory / "infrastructure";
+
     [Solution(GenerateProjects = true)]
     readonly Solution Solution;
+
+    [GitRepository]
+    readonly GitRepository Repository;
 
     Target InitLocalDB => _ => _
         .Executes(() =>
@@ -109,21 +117,25 @@ class Build : NukeBuild
 
     Target PublishDocker => _ => _
         .DependsOn(Publish)
+        .Requires(() => DigitalOcean_Token, () => RegistryUrl)
         .Executes(() =>
         {
+            Repository.Commit.NotNullOrEmpty();
+
             DockerLogger = (type, text) => Log.Debug(text);
 
             if (!string.IsNullOrEmpty(RegistryUrl))
             {
-                DigitalOceanApiToken.NotNullOrEmpty();
 
                 DockerLogin(a => a
                     .SetServer(RegistryUrl)
-                    .SetUsername(DigitalOceanApiToken)
-                    .SetPassword(DigitalOceanApiToken));
+                    .SetUsername(DigitalOcean_Token)
+                    .SetPassword(DigitalOcean_Token));
             }
 
-            var tag = "rigo-questions-app";
+            DockerTag = $"{DateTime.Today:yy.MM.dd}.{Repository.Commit[..7]}";
+
+            var tag = $"rigo-questions-app:{DockerTag}";
             var tags = new List<string>() { tag };
             var remoteTag = $"{RegistryUrl}/{tag}";
             if (!string.IsNullOrEmpty(RegistryUrl))
@@ -134,6 +146,40 @@ class Build : NukeBuild
             // push, if remoteurl is available
             if (!string.IsNullOrEmpty(RegistryUrl))
                 DockerPush(a => a.SetName(remoteTag));
+
+            Log.Information("Docker image tag {tag}", tag);
         });
 
+    Target DeployToLatest => _ => _
+        .DependsOn(PublishDocker)
+        .Executes(() => DeployToAction("latest", DockerTag));
+
+    Target DeployLatestToStage => _ => _
+        .Executes(() =>
+        {
+            PulumiStackSelect(a => a
+                .SetStackName("latest")
+                .SetCwd(InfrastructureDirectory));
+
+            var dockerTag = PulumiConfigGet(a => a
+                .SetKey("dockerTag")
+                .SetCwd(InfrastructureDirectory)).Select(q => q.Text).FirstOrDefault();
+
+            dockerTag.NotNullOrEmpty();
+
+            DeployToAction("stage", dockerTag);
+        });
+
+
+    void DeployToAction(string stack, string dockerTag)
+    {
+        dockerTag.NotNullOrEmpty();
+
+        PulumiStackSelect(a => a.SetStackName(stack).SetCwd(InfrastructureDirectory));
+
+        PulumiUp(a => a
+            .SetYes(true)
+            .SetCwd(InfrastructureDirectory)
+            .AddConfig($"dockerTag={dockerTag}"));
+    }
 }
