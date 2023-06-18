@@ -25,7 +25,7 @@ using Nuke.Common.CI.GitHubActions;
     GitHubActionsImage.UbuntuLatest,
     On = new[] { GitHubActionsTrigger.PullRequest },
     InvokedTargets = new[] { nameof(DeployToLatest) },
-    ImportSecrets = new[] { nameof(RegistryUrl), nameof(DigitalOcean_Token) })]
+    ImportSecrets = new[] { nameof(RegistryUrl), nameof(DigitalOcean_Token), nameof(Pulumi_Token) })]
 class Build : NukeBuild
 {
 
@@ -38,8 +38,11 @@ class Build : NukeBuild
     [Parameter("Url of the docker registry (without the https:// prefix)"), Secret]
     readonly string RegistryUrl = null;
 
-    [Parameter("Api Token for Docker push"), Secret]
+    [Parameter("Api Token for Digital Ocean deployments"), Secret]
     readonly string DigitalOcean_Token = null;
+
+    [Parameter("Api Token for Pulumi"), Secret]
+    readonly string Pulumi_Token = null;
 
     [Parameter("Docker Tag for deployment")]
     string DockerTag = null;
