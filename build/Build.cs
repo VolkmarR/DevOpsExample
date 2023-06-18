@@ -63,6 +63,7 @@ class Build : NukeBuild
     protected override void OnBuildInitialized()
     {
         base.OnBuildInitialized();
+        Environment.SetEnvironmentVariable("DIGITALOCEAN_TOKEN", DigitalOcean_Token);
         Environment.SetEnvironmentVariable("PULUMI_ACCESS_TOKEN", PULUMI_ACCESS_TOKEN);
     }
 
