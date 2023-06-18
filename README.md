@@ -4,11 +4,14 @@
 
 The following setup is necessary to execute the deployment to DigitalOcean
 
-### Api Token for DigitalOcean
+### Api-Tokens 
 
-Nuke needs the DigitalOcean Api Token. It must be set as an environment variable:
+Nuke needs a DigitalOcean Api-Token and a Pulumi API-Token. Both must be set as environment variables:
 
-```$env:DIGITALOCEAN_TOKEN='dop_...'```
+```
+$env:DIGITALOCEAN_TOKEN='dop_...'
+$env:PULUMI_ACCESS_TOKEN='pul_...'
+```
 
 ### Deploying common infrastructure
 

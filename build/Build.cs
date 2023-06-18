@@ -42,7 +42,7 @@ class Build : NukeBuild
     readonly string DigitalOcean_Token = null;
 
     [Parameter("Api Token for Pulumi"), Secret]
-    readonly string Pulumi_Token = null;
+    readonly string Pulumi_Access_Token = null;
 
     [Parameter("Docker Tag for deployment")]
     string DockerTag = null;
@@ -159,10 +159,12 @@ class Build : NukeBuild
         });
 
     Target DeployToLatest => _ => _
+        .Requires(() => Pulumi_Access_Token)
         .DependsOn(PublishDocker)
         .Executes(() => DeployToAction("latest", DockerTag));
 
     Target DeployLatestToStage => _ => _
+        .Requires(() => Pulumi_Access_Token)
         .Executes(() =>
         {
             PulumiStackSelect(a => a
@@ -179,6 +181,7 @@ class Build : NukeBuild
         });
 
     Target DestroyCompleteDeployment => _ => _
+        .Requires(() => Pulumi_Access_Token)
         .Executes(() =>
         {
             DestroyStack("stage");
@@ -187,6 +190,7 @@ class Build : NukeBuild
         });
 
     Target DeployCommon => _ => _
+        .Requires(() => Pulumi_Access_Token)
         .Executes(() =>
         {
             PulumiStackSelect(a => a.SetStackName("common").SetCwd(InfrastructureDirectory));
