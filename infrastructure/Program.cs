@@ -1,56 +1,72 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using Google.Protobuf.WellKnownTypes;
-using Microsoft.Extensions.Hosting;
 using Pulumi;
+using Pulumi.DigitalOcean;
 using DigitalOcean = Pulumi.DigitalOcean;
 
-return await Deployment.RunAsync(() =>
+return await Deployment.RunAsync((Func<IDictionary<string, object?>>)(() =>
 {
     var outputs = new Dictionary<string, object?>();
 
     if ("common".Equals(Deployment.Instance.StackName, StringComparison.OrdinalIgnoreCase))
     {
-        var containerRegistry = new DigitalOcean.ContainerRegistry("registry", new DigitalOcean.ContainerRegistryArgs
-        {
-            SubscriptionTierSlug = "starter",
-            Name = "devops-example",
-            Region = "fra1",
-        });
-
-        var reg = new StackReference($"{Deployment.Instance.OrganizationName}/{Deployment.Instance.ProjectName}/registry");
-
-        var dbCluster = new DigitalOcean.DatabaseCluster("devops-example-db-cluster", new()
-        {
-            Engine = "pg",
-            Name = "devops-example-db-cluster",
-            NodeCount = 1,
-            Region = "fra1",
-            Size = "db-s-1vcpu-1gb",
-            Version = "15",
-        });
-
-        outputs["registry-url"] = containerRegistry.Endpoint;
-        outputs["db-cluster-id"] = dbCluster.Id;
+        outputs["registry-url"] = SetupRegistry().Endpoint;
+        outputs["db-cluster-id"] = SetupDatabaseCluster().Id;
     }
     else
     {
-        var reg = new StackReference($"{Deployment.Instance.OrganizationName}/{Deployment.Instance.ProjectName}/common");
-        var clusterId = reg.RequireOutput("db-cluster-id").Apply(v => (string)v);
+        var cfg = new Pulumi.Config();
+        var dockerTag = cfg.Require("dockerTag");
 
-        var dbCluster = DigitalOcean.GetDatabaseCluster.Invoke(new() { Name = "devops-example-db-cluster" });
+        var cluster = GetCluster();
 
-        var db = new DigitalOcean.DatabaseDb("devops-example-db", new()
+        var db = SetupDatabase(cluster);
+
+        var app = SetupApp(cluster, db, dockerTag);
+
+        outputs["LiveUrl"] = app.LiveUrl;
+        outputs["dockerTag"] = dockerTag;
+    }
+
+    // Export outputs here
+    return outputs;
+}));
+
+
+static ContainerRegistry SetupRegistry()
+    => new ContainerRegistry("registry", new ContainerRegistryArgs
+    {
+        SubscriptionTierSlug = "starter",
+        Name = "devops-example",
+        Region = "fra1",
+    });
+
+static DatabaseCluster SetupDatabaseCluster()
+    => new("devops-example-db-cluster", new()
+    {
+        Engine = "pg",
+        Name = "devops-example-db-cluster",
+        NodeCount = 1,
+        Region = "fra1",
+        Size = "db-s-1vcpu-1gb",
+        Version = "15",
+    });
+
+static Output<GetDatabaseClusterResult> GetCluster()
+    => GetDatabaseCluster.Invoke(new() { Name = "devops-example-db-cluster" });
+
+static DatabaseDb SetupDatabase(Output<GetDatabaseClusterResult> cluster)
+    => new($"devops-example-db-{Deployment.Instance.StackName}", new()
+    {
+        ClusterId = cluster.Apply(v => v.Id),
+    });
+
+static App SetupApp(Output<GetDatabaseClusterResult> dbCluster, DatabaseDb db, string dockerTag)
+    => new("devops-example-app", new()
+    {
+        Spec = new DigitalOcean.Inputs.AppSpecArgs
         {
-            ClusterId = dbCluster.Apply(v => v.Id),
-        });
-
-        var app = new DigitalOcean.App("devops-example-app", new()
-        {
-            Spec = new DigitalOcean.Inputs.AppSpecArgs
-            {
-                Alerts = new[]
+            Alerts = new[]
                 {
                     new DigitalOcean.Inputs.AppSpecAlertArgs
                     {
@@ -61,9 +77,9 @@ return await Deployment.RunAsync(() =>
                         Rule = "DOMAIN_FAILED",
                     },
                 },
-                Name = "devops-example",
-                Region = "fra",
-                Services = new[]
+            Name = $"devops-example-{Deployment.Instance.StackName}",
+            Region = "fra",
+            Services = new[]
                 {
                     new DigitalOcean.Inputs.AppSpecServiceArgs
                     {
@@ -102,24 +118,16 @@ return await Deployment.RunAsync(() =>
                             {
                                 new DigitalOcean.Inputs.AppSpecServiceImageDeployOnPushArgs
                                 {
-                                    Enabled = true,
+                                    Enabled = false,
                                 },
                             },
                             RegistryType = "DOCR",
                             Repository = "rigo-questions-app",
-                            Tag = "latest",
+                            Tag = dockerTag,
                         },
                         InstanceSizeSlug = "basic-xxs",
                         Name = "rigo-questions-app",
                     },
                 },
-            },
-        });
-
-        outputs["LiveUrl"] = app.LiveUrl;
-    }
-
-    // Export outputs here
-    return outputs;
-});
-
+        },
+    });
