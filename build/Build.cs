@@ -65,6 +65,10 @@ class Build : NukeBuild
         base.OnBuildInitialized();
         Environment.SetEnvironmentVariable("DIGITALOCEAN_TOKEN", DigitalOcean_Token);
         Environment.SetEnvironmentVariable("PULUMI_ACCESS_TOKEN", PULUMI_ACCESS_TOKEN);
+
+        var a = DigitalOcean_Token;
+
+        Log.Information("data {a}", a);
     }
 
     Target InitLocalDB => _ => _
