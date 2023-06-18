@@ -133,7 +133,7 @@ class Build : NukeBuild
                     .SetPassword(DigitalOcean_Token));
             }
 
-            DockerTag = $"{DateTime.Today:yy.MM.dd}.{Repository.Commit[..7]}";
+            DockerTag = $"{DateTime.Today:yy.MM.dd}.{Repository.Commit[..7]}-{DateTime.Now:ff}{Random.Shared.Next(0, 9)}";
 
             var tag = $"rigo-questions-app:{DockerTag}";
             var tags = new List<string>() { tag };
@@ -141,7 +141,10 @@ class Build : NukeBuild
             if (!string.IsNullOrEmpty(RegistryUrl))
                 tags.Add(remoteTag);
 
-            DockerBuild(a => a.SetPath(PublishDirectory).SetTag(tags));
+            DockerBuild(a => a
+                .SetPath(PublishDirectory)
+                .SetBuildArg($"build_tag={DockerTag}")
+                .SetTag(tags));
 
             // push, if remoteurl is available
             if (!string.IsNullOrEmpty(RegistryUrl))
@@ -169,6 +172,35 @@ class Build : NukeBuild
 
             DeployToAction("stage", dockerTag);
         });
+
+    Target DestroyCompleteDeployment => _ => _
+        .Executes(() =>
+        {
+            DestroyStack("stage");
+            DestroyStack("latest");
+            DestroyStack("common");
+        });
+
+    Target DeployCommon => _ => _
+        .Executes(() =>
+        {
+            PulumiStackSelect(a => a.SetStackName("common").SetCwd(InfrastructureDirectory));
+
+            PulumiUp(a => a
+                .SetYes(true)
+                .SetCwd(InfrastructureDirectory));
+        });
+
+    void DestroyStack(string stack)
+    {
+        PulumiStackSelect(a => a
+            .SetStackName("latest")
+            .SetCwd(InfrastructureDirectory));
+
+        PulumiDestroy(a => a
+            .SetYes(true)
+            .SetCwd(InfrastructureDirectory));
+    }
 
 
     void DeployToAction(string stack, string dockerTag)

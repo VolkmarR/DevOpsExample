@@ -26,12 +26,12 @@ var connectionStringBuilder = new NpgsqlConnectionStringBuilder()
     SslMode = SslMode.Allow,
 };
 
-Console.WriteLine(connectionStringBuilder.ToString());
-
 builder.Services.AddDbContext<QuestionsContext>(x => x.UseNpgsql(connectionStringBuilder.ToString()));
 // Configuration for SignalR
 builder.Services.AddSignalR();
 
+// Store VersionInfo
+var versionInfo = $"{connectionStringBuilder.Database} - {Environment.GetEnvironmentVariable("Version")}";
 
 // Add Observability
 var observabilityOptions = new ObservabilityOptions();
@@ -59,6 +59,8 @@ app.UseStaticFiles();
 // Queries
 app.MapGet("api/queries/questions", async (IMediator mediator) 
     => await mediator.Send(new GetQuestionsRequest()));
+
+app.MapGet("api/queries/versionInfo", () => versionInfo);
 
 // Commands
 app.MapPost("api/commands/questions/", async (IMediator mediator, string content) 
