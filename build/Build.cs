@@ -25,12 +25,12 @@ using Nuke.Common.CI.GitHubActions;
     GitHubActionsImage.UbuntuLatest,
     On = new[] { GitHubActionsTrigger.PullRequest },
     InvokedTargets = new[] { nameof(DeployToLatest) },
-    ImportSecrets = new[] { nameof(RegistryUrl), nameof(DigitalOcean_Token), nameof(Pulumi_Access_Token) })]
+    ImportSecrets = new[] { nameof(RegistryUrl), nameof(DigitalOcean_Token), nameof(PULUMI_ACCESS_TOKEN) })]
 [GitHubActions("MAN-DeployLatestToStage",
     GitHubActionsImage.UbuntuLatest,
     On = new[] { GitHubActionsTrigger.WorkflowDispatch },
     InvokedTargets = new[] { nameof(DeployLatestToStage) },
-    ImportSecrets = new[] { nameof(RegistryUrl), nameof(DigitalOcean_Token), nameof(Pulumi_Access_Token) })]
+    ImportSecrets = new[] { nameof(RegistryUrl), nameof(DigitalOcean_Token), nameof(PULUMI_ACCESS_TOKEN) })]
 class Build : NukeBuild
 {
 
@@ -47,7 +47,7 @@ class Build : NukeBuild
     readonly string DigitalOcean_Token = null;
 
     [Parameter("Api Token for Pulumi"), Secret]
-    readonly string Pulumi_Access_Token = null;
+    readonly string PULUMI_ACCESS_TOKEN = null;
 
     [Parameter("Docker Tag for deployment")]
     string DockerTag = null;
@@ -164,12 +164,12 @@ class Build : NukeBuild
         });
 
     Target DeployToLatest => _ => _
-        .Requires(() => Pulumi_Access_Token)
+        .Requires(() => PULUMI_ACCESS_TOKEN)
         .DependsOn(PublishDocker)
         .Executes(() => DeployToAction("latest", DockerTag));
 
     Target DeployLatestToStage => _ => _
-        .Requires(() => Pulumi_Access_Token)
+        .Requires(() => PULUMI_ACCESS_TOKEN)
         .Executes(() =>
         {
             PulumiStackSelect(a => a
@@ -186,7 +186,7 @@ class Build : NukeBuild
         });
 
     Target DestroyCompleteDeployment => _ => _
-        .Requires(() => Pulumi_Access_Token)
+        .Requires(() => PULUMI_ACCESS_TOKEN)
         .Executes(() =>
         {
             DestroyStack("stage");
@@ -195,7 +195,7 @@ class Build : NukeBuild
         });
 
     Target DeployCommon => _ => _
-        .Requires(() => Pulumi_Access_Token)
+        .Requires(() => PULUMI_ACCESS_TOKEN)
         .Executes(() =>
         {
             PulumiStackSelect(a => a.SetStackName("common").SetCwd(InfrastructureDirectory));
@@ -221,7 +221,15 @@ class Build : NukeBuild
     {
         dockerTag.NotNullOrEmpty();
 
-        PulumiStackSelect(a => a.SetStackName(stack).SetCwd(InfrastructureDirectory));
+        Log.Information("PARAM: " + PULUMI_ACCESS_TOKEN);
+
+        Log.Information("ENV: " + Environment.GetEnvironmentVariable("PULUMI_ACCESS_TOKEN"));
+
+
+        PulumiStackSelect(a => a
+            .SetStackName(stack)
+            .SetCwd(InfrastructureDirectory)
+            .SetNonInteractive(true));
 
         PulumiUp(a => a
             .SetYes(true)
