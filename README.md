@@ -13,6 +13,10 @@ $env:DIGITALOCEAN_TOKEN='dop_...'
 $env:PULUMI_ACCESS_TOKEN='pul_...'
 ```
 
+### Nuke and Pulumi
+
+Nuke (https://nuke.build/docs/getting-started/installation/) and Pulumi (https://www.pulumi.com/docs/install/) must be installed.
+
 ### Deploying common infrastructure
 
 The common deployment creates a Docker Registry and a Postgres Cluster on DigitalOcean. Execute the following command in the solution directory:
@@ -33,11 +37,19 @@ To setup the local password for the postgres database and the user secret for th
 
 ```nuke InitLocalDB```
 
-## Deployment
+## Deployment with github actions
+
+### Setup
+
+GitHub Actions triggers nuke and pulumi. Therefore it is neccessary to define the environment variable as Repository secrets.
+
+* DIGITALOCEAN_TOKEN
+* PULUMI_ACCESS_TOKEN
+* REGISTRYURL
 
 ### Deploy to latest
 
-To deploy to the *latest* environment, you have to create a pull-request. The pull-request triggers the GitHub action **PR-Test.yml**. After completing the PR, the GitHub action **PR-DeployToLatest.yml** is triggered, that creates the docker image and updates the *latest* environment.
+To deploy to the *latest* environment, you have to create a pull-request. The pull-request triggers the GitHub action **PR-Test.yml**. After completing the PR, the GitHub action **PR-DeployToLatest.yml** is triggered, that creates the docker image and updates the *latest* environment. Alternatively you can trigger the PR-DeployToLatest Workflow manually.
 
 ### Deploy latest to stage
 
