@@ -66,63 +66,63 @@
                 <span>Version: {{ versionInfo }}</span>
             </div>
         </div>
-
-        <script>
-            // vue app for the page
-            var app = Vue.createApp({
-                data: () => ({
-                    // the list of questions, displayed in the table
-                    questionList: [],
-                    // the value of the "add new question" edit
-                    newQuestion: '',
-                    // version info from the api
-                    versionInfo: '',
-                }),
-                methods: {
-                    // adds a new question to the list
-                    add: function (event) {
-                        // if the question is empty, call stopPropagation to stop twitter bootstrap from colapsing the card
-                        if (this.newQuestion == '') {
-                            event.stopPropagation();
-                            return;
-                        }
-                        // call the api to add a new question
-                        axios
-                            .post('api/commands/questions', null, { params: { content: this.newQuestion } })
-                            .then(() => {
-                                this.newQuestion = '';
-                            })
-                            .catch(function (error) { alert(error.response.data); });
-                    },
-                    vote: function (question) {
-                        // call the api to increment the votes of the question
-                        axios
-                            .post('api/commands/questions/' + question.id + '/vote')
-                            .catch(function (error) { alert(error.response.data); });
-                    },
-                    getQuestions: function () {
-                        axios
-                            .get('api/queries/questions')
-                            .then(response => (this.questionList = response.data))
+    </div>
+    <script>
+        // vue app for the page
+        var app = Vue.createApp({
+            data: () => ({
+                // the list of questions, displayed in the table
+                questionList: [],
+                // the value of the "add new question" edit
+                newQuestion: '',
+                // version info from the api
+                versionInfo: '',
+            }),
+            methods: {
+                // adds a new question to the list
+                add: function (event) {
+                    // if the question is empty, call stopPropagation to stop twitter bootstrap from colapsing the card
+                    if (this.newQuestion == '') {
+                        event.stopPropagation();
+                        return;
                     }
-                },
-                mounted: function () {
-                    this.getQuestions();
-
+                    // call the api to add a new question
                     axios
-                        .get('api/queries/versionInfo')
-                        .then(response => (this.versionInfo = response.data))
+                        .post('api/commands/questions', null, { params: { content: this.newQuestion } })
+                        .then(() => {
+                            this.newQuestion = '';
+                        })
+                        .catch(function (error) { alert(error.response.data); });
+                },
+                vote: function (question) {
+                    // call the api to increment the votes of the question
+                    axios
+                        .post('api/commands/questions/' + question.id + '/vote')
+                        .catch(function (error) { alert(error.response.data); });
+                },
+                getQuestions: function () {
+                    axios
+                        .get('api/queries/questions')
+                        .then(response => (this.questionList = response.data))
                 }
-            });
-            // app.mount("#questionView");
-            const vm = app.mount("#app");
+            },
+            mounted: function () {
+                this.getQuestions();
 
-            const connection = new signalR.HubConnectionBuilder()
-                .withUrl("hub")
-                .build();
-            connection.start().catch(err => console.error(err.toString()));
-            connection.on("Refresh", () => { console.log("Refresh"); vm.getQuestions(); });
-        </script>
-        <!-- Bootstrap JS -->
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js" integrity="sha256-m81NDyncZVbr7v9E6qCWXwx/cwjuWDlHCMzi9pjMobA=" crossorigin="anonymous"></script>
+                axios
+                    .get('api/queries/versionInfo')
+                    .then(response => (this.versionInfo = response.data))
+            }
+        });
+        // app.mount("#questionView");
+        const vm = app.mount("#app");
+
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("hub")
+            .build();
+        connection.start().catch(err => console.error(err.toString()));
+        connection.on("Refresh", () => { console.log("Refresh"); vm.getQuestions(); });
+    </script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js" integrity="sha256-m81NDyncZVbr7v9E6qCWXwx/cwjuWDlHCMzi9pjMobA=" crossorigin="anonymous"></script>
 </body>
