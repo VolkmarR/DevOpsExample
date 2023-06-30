@@ -396,7 +396,10 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+# Project specific ignores
 database/postgres-data
 docker-postgres-password.txt
 .nuke/build.schema.json
 .nuke/temp/execution-plan.html
+SetEnv.ps1
