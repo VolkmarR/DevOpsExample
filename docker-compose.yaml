@@ -7,7 +7,7 @@ secrets:
 services:
   # Database server
   postgres:
-    image: postgres:15.3-alpine3.18
+    image: postgres:16.1-alpine3.19
     restart: always
     container_name: postgres-container
     volumes:
