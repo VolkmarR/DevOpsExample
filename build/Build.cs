@@ -90,7 +90,7 @@ class Build : NukeBuild
         .Before(Restore)
         .Executes(() =>
         {
-            DotNetClean(s => s.SetVerbosity(DotNetVerbosity.Quiet));
+            DotNetClean(s => s.SetVerbosity(DotNetVerbosity.quiet));
             PublishDirectory.CreateOrCleanDirectory();
         });
 
@@ -99,7 +99,7 @@ class Build : NukeBuild
         {
             DotNetRestore(s => s
                 .SetProjectFile(Solution)
-                .SetVerbosity(DotNetVerbosity.Quiet));
+                .SetVerbosity(DotNetVerbosity.quiet));
         });
 
     Target Compile => _ => _
@@ -110,7 +110,7 @@ class Build : NukeBuild
                 .SetProjectFile(Solution)
                 .SetNoRestore(true)
                 .SetConfiguration(Configuration)
-                .SetVerbosity(DotNetVerbosity.Quiet));
+                .SetVerbosity(DotNetVerbosity.quiet));
         });
 
     Target Test => _ => _
@@ -120,7 +120,7 @@ class Build : NukeBuild
             DotNetTest(s => s
                 .SetProjectFile(Solution.Web.QuestionsApp_Tests)
                 .SetNoRestore(true)
-                .SetVerbosity(DotNetVerbosity.Quiet));
+                .SetVerbosity(DotNetVerbosity.quiet));
         });
 
     Target Publish => _ => _
@@ -132,7 +132,7 @@ class Build : NukeBuild
             DotNetPublish(a => a
                 .SetNoRestore(true)
                 .SetProject(Solution.Web.QuestionsApp_Web)
-                .SetVerbosity(DotNetVerbosity.Quiet)
+                .SetVerbosity(DotNetVerbosity.quiet)
                 .SetOutput(PublishDirectory)
                 .SetConfiguration(Configuration.Release));
 
