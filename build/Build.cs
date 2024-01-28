@@ -37,27 +37,25 @@ class Build : NukeBuild
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
 
-    [Parameter("Url of the docker registry (without the https:// prefix)"), Secret]
-    readonly string REGISTRYURL = null;
+    [Parameter("Url of the docker registry (without the https:// prefix)"), Secret] readonly string REGISTRYURL = null;
 
-    [Parameter("Api Token for Digital Ocean deployments"), Secret]
-    readonly string DIGITALOCEAN_TOKEN = null;
+    [Parameter("Api Token for Digital Ocean deployments"), Secret] readonly string DIGITALOCEAN_TOKEN = null;
 
-    [Parameter("Api Token for Pulumi"), Secret]
-    readonly string PULUMI_ACCESS_TOKEN = null;
+    [Parameter("Api Token for Pulumi"), Secret] readonly string PULUMI_ACCESS_TOKEN = null;
 
-    [Parameter("Docker Tag for deployment")]
-    string DockerTag = null;
+    [Parameter("Docker Tag for deployment")] string DockerTag = null;
 
     AbsolutePath PublishDirectory => Solution.Directory / "publish";
 
     AbsolutePath InfrastructureDirectory => Solution.Directory / "infrastructure";
 
-    [Solution(GenerateProjects = true)]
-    readonly Solution Solution;
+    AbsolutePath DockerPostgresPasswordPath => Solution.Directory / "docker-postgres-password.txt";
 
-    [GitRepository]
-    readonly GitRepository Repository;
+    AbsolutePath DockerPostgresDBPath => Solution.Directory / "database" / "postgres-data";
+
+    [Solution(GenerateProjects = true)] readonly Solution Solution;
+
+    [GitRepository] readonly GitRepository Repository;
 
     protected override void OnBuildInitialized()
     {
@@ -69,22 +67,30 @@ class Build : NukeBuild
     Target InitLocalDB => _ => _
         .Executes(() =>
         {
-            var dockerPostgresPasswordPath = Solution.Directory / "docker-postgres-password.txt";
-            // If Docker Compose was startet before InitLocalDB, then docker-postgres-password.txt is wrongly created as directory
-            if (dockerPostgresPasswordPath.DirectoryExists())
-                dockerPostgresPasswordPath.DeleteDirectory();
-
-            Assert.False(dockerPostgresPasswordPath.FileExists(), "Password was already initialized");
+            Assert.False(DockerPostgresPasswordPath.FileExists(), "Password was already initialized");
+            Assert.False(DockerPostgresDBPath.DirectoryExists(), "PostgreSql Database was already initialized");
 
             var rnd = new Random();
             var password = "";
             while (password.Length < 20)
                 password += "*" + rnd.Next(int.MaxValue);
 
-            File.WriteAllText(dockerPostgresPasswordPath, password);
+            File.WriteAllText(DockerPostgresPasswordPath, password);
 
             DotNet($"user-secrets set DB:Password \"{password}\" --project {Solution.Web.QuestionsApp_Web}");
         });
+
+    Target DestroyLocalDB => _ => _
+        .Executes(() =>
+        {
+            if (DockerPostgresPasswordPath.FileExists())
+                DockerPostgresPasswordPath.DeleteFile();
+            if (DockerPostgresDBPath.DirectoryExists())
+                DockerPostgresDBPath.DeleteDirectory();
+
+            DotNet($"user-secrets remove DB:Password --project {Solution.Web.QuestionsApp_Web}");
+        });
+
 
     Target Clean => _ => _
         .Before(Restore)
@@ -150,14 +156,14 @@ class Build : NukeBuild
 
             if (!string.IsNullOrEmpty(REGISTRYURL))
             {
-
                 DockerLogin(a => a
                     .SetServer(REGISTRYURL)
                     .SetUsername(DIGITALOCEAN_TOKEN)
                     .SetPassword(DIGITALOCEAN_TOKEN));
             }
 
-            DockerTag = $"{DateTime.Today:yy.MM.dd}.{Repository.Commit[..7]}-{DateTime.Now:ff}{Random.Shared.Next(0, 9)}";
+            DockerTag =
+                $"{DateTime.Today:yy.MM.dd}.{Repository.Commit[..7]}-{DateTime.Now:ff}{Random.Shared.Next(0, 9)}";
 
             var tag = $"rigo-questions-app:{DockerTag}";
             var tags = new List<string>() { tag };
