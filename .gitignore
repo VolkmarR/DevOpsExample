@@ -403,3 +403,4 @@ docker-postgres-password.txt
 .nuke/build.schema.json
 .nuke/temp/execution-plan.html
 SetEnv.ps1
+.idea
