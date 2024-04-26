@@ -404,3 +404,4 @@ docker-postgres-password.txt
 .nuke/temp/execution-plan.html
 SetEnv.ps1
 .idea
+*.DotSettings
