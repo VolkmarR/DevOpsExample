@@ -124,6 +124,7 @@ static App SetupApp(Output<GetDatabaseClusterResult> dbCluster, DatabaseDb db, s
                             RegistryType = "DOCR",
                             Repository = "rigo-questions-app",
                             Tag = dockerTag,
+                            RegistryCredentials = "",
                         },
                         InstanceSizeSlug = "basic-xxs",
                         Name = "rigo-questions-app",

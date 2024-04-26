@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/aspnet:7.0.7-alpine3.18
+FROM mcr.microsoft.com/dotnet/aspnet:8.0.3-alpine3.18
 
 # Set config using env variables
 ENV Observability__JaegerUrl=
