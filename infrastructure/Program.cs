@@ -4,7 +4,7 @@ using Pulumi;
 using Pulumi.DigitalOcean;
 using DigitalOcean = Pulumi.DigitalOcean;
 
-return await Deployment.RunAsync((Func<IDictionary<string, object?>>)(() =>
+return await Deployment.RunAsync(() =>
 {
     var outputs = new Dictionary<string, object?>();
 
@@ -30,7 +30,7 @@ return await Deployment.RunAsync((Func<IDictionary<string, object?>>)(() =>
 
     // Export outputs here
     return outputs;
-}));
+});
 
 
 static ContainerRegistry SetupRegistry()

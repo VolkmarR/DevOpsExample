@@ -12,8 +12,8 @@ namespace QuestionsApp.Tests
 
         public QuestionsTests()
         {
-            var options = new DbContextOptionsBuilder<QuestionsContext>().
-                                UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
+            var options = new DbContextOptionsBuilder<QuestionsContext>().UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options;
             _context = new QuestionsContext(options);
         }
 
@@ -23,16 +23,18 @@ namespace QuestionsApp.Tests
 
 
         [Fact]
-        public async void Empty()
+        public async Task Empty()
         {
             var response = await NewGetQuestionsQueryHandler.Handle(new GetQuestionsRequest(), default);
             response.Should().BeEmpty();
         }
 
         [Fact]
-        public async void OneQuestion()
+        public async Task OneQuestion()
         {
-            var askResponse = await NewAskQuestionCommandHandler.Handle(new AskQuestionRequest { Content = "Dummy Question" }, default);
+            var askResponse =
+                await NewAskQuestionCommandHandler.Handle(new AskQuestionRequest { Content = "Dummy Question" },
+                    default);
             askResponse.Should().NotBeNull();
 
             var response = await NewGetQuestionsQueryHandler.Handle(new GetQuestionsRequest(), default);
@@ -40,16 +42,20 @@ namespace QuestionsApp.Tests
         }
 
         [Fact]
-        public async void OneQuestionAndVote()
+        public async Task OneQuestionAndVote()
         {
-            var askResponse = await NewAskQuestionCommandHandler.Handle(new AskQuestionRequest { Content = "Dummy Question" }, default);
+            var askResponse =
+                await NewAskQuestionCommandHandler.Handle(new AskQuestionRequest { Content = "Dummy Question" },
+                    default);
             askResponse.Should().NotBeNull();
 
             var response = await NewGetQuestionsQueryHandler.Handle(new GetQuestionsRequest(), default);
             response.Should().HaveCount(1);
             response[0].Votes.Should().Be(0);
 
-            var voteResponse = await NewVoteForQuestionCommandHandler.Handle(new VoteForQuestionRequest { QuestionID = response[0].ID }, default);
+            var voteResponse =
+                await NewVoteForQuestionCommandHandler.Handle(
+                    new VoteForQuestionRequest { QuestionID = response[0].ID }, default);
             voteResponse.Should().NotBeNull();
 
             response = await NewGetQuestionsQueryHandler.Handle(new GetQuestionsRequest(), default);

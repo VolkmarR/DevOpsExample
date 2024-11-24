@@ -4,13 +4,12 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using System.Diagnostics;
-using System.Reflection;
 
 namespace Observability
 {
     public static class OpenTelemetryExtensions
     {
-        public static void AddObservability(this IServiceCollection services, string name, Type programType, ObservabilityOptions? options = null)
+        public static void AddObservability(this IServiceCollection services, string name, Type? programType, ObservabilityOptions? options = null)
         {
             // Register the ActivitySource to the DI as Singleton
             var activitySource = new ActivitySource(name);
@@ -35,13 +34,13 @@ namespace Observability
                     if (options?.Postgres == true)
                         builder.AddNpgsql();
                 })
-                /*.WithMetrics(builder =>
+                .WithMetrics(builder =>
                 {
                     builder
                         .ConfigureResource(resource => resource.AddService(name))
                         .AddAspNetCoreInstrumentation()
                         .AddConsoleExporter();
-                })*/
+                })
                 ;
         }
 
