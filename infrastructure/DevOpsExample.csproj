@@ -7,8 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Pulumi" Version="3.69.0" />
-    <PackageReference Include="Pulumi.DigitalOcean" Version="4.35.0" />
+    <PackageReference Include="Pulumi" Version="3.71.1" />
+    <PackageReference Include="Pulumi.DigitalOcean" Version="4.37.1" />
   </ItemGroup>
 
 </Project>
