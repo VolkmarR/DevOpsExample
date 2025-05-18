@@ -16,17 +16,17 @@ using Nuke.Common.Git;
 using Nuke.Common.CI.GitHubActions;
 
 [GitHubActions("PR-Test",
-    GitHubActionsImage.UbuntuLatest,
+    GitHubActionsImage.Ubuntu2204,
     On = new[] { GitHubActionsTrigger.PullRequest },
     InvokedTargets = new[] { nameof(Test) },
     ImportSecrets = new[] { nameof(REGISTRYURL), nameof(DIGITALOCEAN_TOKEN), nameof(PULUMI_ACCESS_TOKEN) })]
 [GitHubActions("PR-DeployToLatest",
-    GitHubActionsImage.UbuntuLatest,
+    GitHubActionsImage.Ubuntu2204,
     OnPushBranches = new[] { "master" },
     InvokedTargets = new[] { nameof(DeployToLatest) },
     ImportSecrets = new[] { nameof(REGISTRYURL), nameof(DIGITALOCEAN_TOKEN), nameof(PULUMI_ACCESS_TOKEN) })]
 [GitHubActions("MAN-DeployLatestToStage",
-    GitHubActionsImage.UbuntuLatest,
+    GitHubActionsImage.Ubuntu2204,
     On = new[] { GitHubActionsTrigger.WorkflowDispatch },
     InvokedTargets = new[] { nameof(DeployLatestToStage) },
     ImportSecrets = new[] { nameof(REGISTRYURL), nameof(DIGITALOCEAN_TOKEN), nameof(PULUMI_ACCESS_TOKEN) })]
@@ -151,8 +151,6 @@ class Build : NukeBuild
         .Executes(() =>
         {
             Repository.Commit.NotNullOrEmpty();
-
-            DockerLogger = (type, text) => Log.Debug(text);
 
             if (!string.IsNullOrEmpty(REGISTRYURL))
             {

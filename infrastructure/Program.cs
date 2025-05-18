@@ -49,7 +49,7 @@ static DatabaseCluster SetupDatabaseCluster()
         NodeCount = 1,
         Region = "fra1",
         Size = "db-s-1vcpu-1gb",
-        Version = "15",
+        Version = "17",
     });
 
 static Output<GetDatabaseClusterResult> GetCluster()

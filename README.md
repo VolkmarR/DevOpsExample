@@ -41,7 +41,7 @@ To setup the local password for the postgres database and the user secret for th
 
 ### Setup
 
-GitHub Actions triggers nuke and pulumi. Therefore it is neccessary to define the environment variable as Repository secrets.
+GitHub Actions triggers nuke and pulumi. Therefore, it is necessary to define the environment variable as Repository secrets.
 
 * DIGITALOCEAN_TOKEN
 * PULUMI_ACCESS_TOKEN
