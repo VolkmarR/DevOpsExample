@@ -152,8 +152,6 @@ class Build : NukeBuild
         {
             Repository.Commit.NotNullOrEmpty();
 
-            DockerLogger = (type, text) => Log.Debug(text);
-
             if (!string.IsNullOrEmpty(REGISTRYURL))
             {
                 DockerLogin(a => a
