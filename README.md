@@ -62,3 +62,4 @@ Docker Compose is uses for local testing. To start the PostgreSQL Database, exec
 ```docker compose up```
 
 Then you can load and start the solution in visual studio.
+
